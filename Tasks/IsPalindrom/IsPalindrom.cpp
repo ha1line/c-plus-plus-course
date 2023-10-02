@@ -14,9 +14,3 @@ bool IsPalindrome(const std::string& str)
     }
     return true;
 }
-
-int main()
-{
-    std::string _str="ababab";
-    std::cout<< IsPalindrome(_str);
-}
