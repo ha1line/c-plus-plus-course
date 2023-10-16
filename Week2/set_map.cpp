@@ -6,7 +6,7 @@
 
 // Functions to print containers
 
-void PrintSet(std::set<char> _set)
+void PrintSet(const std::set<char>& _set)
 {
     for (auto s : _set)
     {
@@ -15,7 +15,7 @@ void PrintSet(std::set<char> _set)
     std::cout << std::endl;
 }
 
-void PrintSet(std::set<int> _set)
+void PrintSet(const std::set<int>& _set)
 {
     for (auto s : _set)
     {
@@ -24,7 +24,7 @@ void PrintSet(std::set<int> _set)
     std::cout << std::endl;
 }
 
-bool IsElemSet(std::set<int> _set, int elem) { return _set.count(elem); }
+bool IsElemSet(const std::set<int>& _set, const int elem) { return _set.count(elem); }
 
 void PrintMap(std::map<std::string, int> _map)
 {
