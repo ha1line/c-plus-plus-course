@@ -1,2 +1,2 @@
 Description of first task
-https://contest.yandex.ru/contest/53451/problems/
+https://contest.yandex.ru/contest/53451/problems/1
