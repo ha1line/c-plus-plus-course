@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <math.h>
+#include <cstdint>
 
 class Figure
 {
@@ -18,9 +19,9 @@ public:
 class Triangle : public Figure
 {
 public:
-    Triangle(double a, double b, double c) : m_a(a),
-                                             m_b(b),
-                                             m_c(c)
+    Triangle(uint16_t a, uint16_t b, uint16_t c) : m_a(a),
+                                                   m_b(b),
+                                                   m_c(c)
     {
     }
 
@@ -40,16 +41,16 @@ public:
     }
 
 private:
-    const double m_a;
-    const double m_b;
-    const double m_c;
+    uint16_t m_a;
+    uint16_t m_b;
+    uint16_t m_c;
 };
 
 class Rectangle : public Figure
 {
 public:
-    Rectangle(double a, double b) : m_a(a),
-                                    m_b(b)
+    Rectangle(uint16_t width, uint16_t height) : m_width(width),
+                                        m_height(height)
     {
     }
 
@@ -60,23 +61,23 @@ public:
 
     double Perimeter() const final
     {
-        return 2 * m_a + 2 * m_b;
+        return 2 * m_width + 2 * m_height;
     }
 
     double Area() const final
     {
-        return double(m_a * m_b);
+        return m_width * m_height;
     }
 
 private:
-    const double m_a;
-    const double m_b;
+    uint16_t m_width;
+    uint16_t m_height;
 };
 
 class Circle : public Figure
 {
 public:
-    Circle(double radius) : m_radius(radius)  
+    Circle(int radius) : m_radius(radius)
     {
     }
 
@@ -96,54 +97,58 @@ public:
     }
 
 private:
-    const double m_radius;
+    uint16_t m_radius;
     const double m_pi = 3.14;
 };
 
-std::shared_ptr<Figure> CreateFigure(std::istringstream& is)
+std::shared_ptr<Figure> CreateFigure(std::istream &is)
 {
-    std:: string figure;
+    std::string figure;
     is >> figure;
-    std::cout << figure;
+    is.ignore(1);
     if (figure == "RECT")
     {
-        double a;
-        double b;
-        is >> a >> b;
+        uint16_t a;
+        uint16_t b;
+        is >> a;
+        is.ignore(1);
+        is >> b;
         return std::make_shared<Rectangle>(a, b);
     }
 
     else if (figure == "TRIANGLE")
     {
-        double a;
-        double b;
-        double c;
-        is >> a >> b >> c;
-        return std::make_shared<Triangle>(a,b,c);
+        uint16_t a;
+        uint16_t b;
+        uint16_t c;
+        is >> a;
+        is.ignore(1);
+        is >> b;
+        is.ignore(1);
+        is >> c;
+        return std::make_shared<Triangle>(a, b, c);
     }
 
     else if (figure == "CIRCLE")
     {
-        double radius;
+        uint16_t radius;
         is >> radius;
         return std::make_shared<Circle>(radius);
     }
+
+    return nullptr;
 }
 
 int main()
 {
-    
     std::vector<std::shared_ptr<Figure>> figures;
     for (std::string line; std::getline(std::cin, line);)
     {
         std::istringstream is(line);
-        std::cout << is.beg;
         std::string command;
         is >> command;
         if (command == "ADD")
         {
-            // Файловый манипулятор для пропуска ведущих пробелов
-            // https://en.cppreference.com/w/cpp/io/manip/ws
             is >> std::ws;
             figures.push_back(CreateFigure(is));
         }
