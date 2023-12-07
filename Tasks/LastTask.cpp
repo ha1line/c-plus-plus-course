@@ -35,6 +35,16 @@ Date::Date(i32 year, i32 month, i32 day) :
 	m_month(month),
 	m_day(day)
 {
+	if (month < 1 or month > 12)
+	{
+		std::cout << "Month value is invalid: " << month << '\n';
+		throw std::runtime_error("Wrong month value");
+	}
+	else if (day < 1 or day > 31)
+	{
+		std::cout << "Day value is invalid: " << day << '\n';
+		throw std::runtime_error("Wrong day value");
+	}
 }
 
 i32 Date::GetYear() const
@@ -168,22 +178,7 @@ Date read_date(const std::string& date) noexcept(false)
 	}
 	index = date_stream.tellg();
 	date_stream >> delemiter >> day;
-	if (delemiter != '-' or date_stream.fail() or date_stream.tellg() - index > 3)
-	{
-		std::cout << "Wrong date format: " << date << '\n';
-		throw std::runtime_error("Wrong date format");
-	}
-	else if (month < 1 or month > 12)
-	{
-		std::cout << "Month value is invalid: " << month << '\n';
-		throw std::runtime_error("Wrong month value");
-	}
-	else if (day < 1 or day > 31)
-	{
-		std::cout << "Day value is invalid: " << day << '\n';
-		throw std::runtime_error("Wrong day value");
-	}
-	if (date_stream)
+	if (delemiter != '-' or date_stream.fail() or date_stream.tellg() - index > 3 or date_stream)
 	{
 		std::cout << "Wrong date format: " << date << '\n';
 		throw std::runtime_error("Wrong date format");
