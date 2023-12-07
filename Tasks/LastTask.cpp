@@ -15,17 +15,18 @@ using u64 = uint64_t;
 class Date
 {
 public:
+	Date() = default;
 	Date(i32 year, i32 month, i32 day);
-
-	// No copy / move constructor & operator=, 'cause trivially copyable / moveable
 
 	i32 GetYear() const;
 	i32 GetMonth() const;
 	i32 GetDay() const;
 private:
-	const i32 m_year;
-	const i32 m_month;
-	const i32 m_day;
+
+	// Not consts 'cause I use operator>> with the date
+	i32 m_year = 0;
+	i32 m_month = 0;
+	i32 m_day = 0;
 };
 
 /* Region: Date implementation */
@@ -90,6 +91,35 @@ std::ostream& operator<<(std::ostream& out, const Date& date)
 		<< std::setw(2) << std::setfill('0') << date.GetMonth() << '-'
 		<< std::setw(2) << std::setfill('0') << date.GetDay();
 	return out;
+}
+
+std::istream& operator>>(std::istream& is, Date& date)
+{
+	i32 year, month, day;
+	char delimiter;
+	std::streampos index = is.tellg();
+	is >> year;
+	if (is.tellg() - index > 4)
+	{
+		std::cout << "Wrong date format: " << date << '\n';
+		throw std::runtime_error("Wrong date format");
+	}
+	index = is.tellg();
+	is >> delimiter >> month;
+	if (delimiter != '-' or is.tellg() - index > 3)
+	{
+		std::cout << "Wrong date format: " << date << '\n';
+		throw std::runtime_error("Wrong date format");
+	}
+	index = is.tellg();
+	is >> delimiter >> day;
+	if (delimiter != '-' or is.fail() or is.tellg() - index > 3)
+	{
+		std::cout << "Wrong date format: " << date << '\n';
+		throw std::runtime_error("Wrong date format");
+	}
+	date = { year, month, day };
+	return is;
 }
 
 /* End of region: Date implementation */
@@ -157,49 +187,19 @@ void Database::Print() const
 
 /* Region: Base functions */
 
-Date read_date(const std::string& date) noexcept(false)
-{
-	std::stringstream date_stream(date);
-	i32 year, month, day;
-	char delemiter;
-	std::streampos index = date_stream.tellg();
-	date_stream >> year;
-	if (date_stream.tellg() - index > 4)
-	{
-		std::cout << "Wrong date format: " << date << '\n';
-		throw std::runtime_error("Wrong date format");
-	}
-	index = date_stream.tellg();
-	date_stream >> delemiter >> month;
-	if (delemiter != '-' or date_stream.tellg() - index > 3)
-	{
-		std::cout << "Wrong date format: " << date << '\n';
-		throw std::runtime_error("Wrong date format");
-	}
-	index = date_stream.tellg();
-	date_stream >> delemiter >> day;
-	if (delemiter != '-' or date_stream.fail() or date_stream.tellg() - index > 3 or date_stream)
-	{
-		std::cout << "Wrong date format: " << date << '\n';
-		throw std::runtime_error("Wrong date format");
-	}
-	return Date(year, month, day);
-}
-
 void Add(Database& db, std::stringstream& line)
 {
-	std::string date_s, event;
-	line >> date_s;
-	Date date = read_date(date_s);
-	line >> event;
+	std::string event;
+	Date date;
+	line >> date >> event;
 	db.AddEvent(date, event);
 }
 
 void Del(Database& db, std::stringstream& line)
 {
-	std::string date_s, event;
-	line >> date_s;
-	Date date = read_date(date_s);
+	std::string event;
+	Date date;
+	line >> date;
 	if (not line.eof())
 	{
 		line >> event;
@@ -216,9 +216,8 @@ void Del(Database& db, std::stringstream& line)
 
 void Find(Database& db, std::stringstream& line)
 {
-	std::string date_s;
-	line >> date_s;
-	Date date = read_date(date_s);
+	Date date;
+	line >> date;
 	for (const auto& each : db.Find(date))
 	{
 		std::cout << each << '\n';
