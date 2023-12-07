@@ -186,66 +186,42 @@ Date read_date(const std::string& date) noexcept(false)
 	return Date(year, month, day);
 }
 
-bool Add(Database& db, std::stringstream& line)
+void Add(Database& db, std::stringstream& line)
 {
 	std::string date_s, event;
-	try
+	line >> date_s;
+	Date date = read_date(date_s);
+	line >> event;
+	db.AddEvent(date, event);
+}
+
+void Del(Database& db, std::stringstream& line)
+{
+	std::string date_s, event;
+	line >> date_s;
+	Date date = read_date(date_s);
+	if (not line.eof())
 	{
-		line >> date_s;
-		Date date = read_date(date_s);
 		line >> event;
-		db.AddEvent(date, event);
-		return true;
-	}
-	catch (const std::runtime_error&)
-	{
-		return false;
-	}
-}
-
-bool Del(Database& db, std::stringstream& line)
-{
-	std::string date_s, event;
-	try
-	{
-		line >> date_s;
-		Date date = read_date(date_s);
-		if (not line.eof())
-		{
-			line >> event;
-			if (db.DeleteEvent(date, event))
-				std::cout << "Deleted successfully\n";
-			else
-				std::cout << "Event not found\n";
-		}
+		if (db.DeleteEvent(date, event))
+			std::cout << "Deleted successfully\n";
 		else
-		{
-			std::cout << "Deleted " << db.DeleteDate(date) << " events\n";
-		}
-		return true;
+			std::cout << "Event not found\n";
 	}
-	catch (const std::runtime_error&)
+	else
 	{
-		return false;
+		std::cout << "Deleted " << db.DeleteDate(date) << " events\n";
 	}
 }
 
-bool Find(Database& db, std::stringstream& line)
+void Find(Database& db, std::stringstream& line)
 {
 	std::string date_s;
-	try
+	line >> date_s;
+	Date date = read_date(date_s);
+	for (const auto& each : db.Find(date))
 	{
-		line >> date_s;
-		Date date = read_date(date_s);
-		for (const auto& each : db.Find(date))
-		{
-			std::cout << each << '\n';
-		}
-		return true;
-	}
-	catch (const std::runtime_error&)
-	{
-		return false;
+		std::cout << each << '\n';
 	}
 }
 
@@ -260,22 +236,20 @@ i32 main()
 		std::stringstream line(commandLine);
 		std::string command;
 		line >> command;
-		if (command == "Add") 
+		try
 		{
-			if (not Add(db, line)) break;
+			if (command == "Add") Add(db, line);
+			else if (command == "Del") Del(db, line);
+			else if (command == "Find") Find(db, line);
+			else if (command == "Print") db.Print();
+			else
+			{
+				std::cout << "Unknown command: " << command << '\n';
+				break;
+			}
 		}
-		else if (command == "Del") 
+		catch (const std::runtime_error&)
 		{
-			if (not Del(db, line)) break;
-		}
-		else if (command == "Find") 
-		{
-			if (not Find(db, line)) break;
-		}
-		else if (command == "Print") db.Print();
-		else
-		{
-			std::cout << "Unknown command: " << command << '\n';
 			break;
 		}
 	}
