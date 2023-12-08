@@ -1,37 +1,28 @@
-// Don't use name guards and pragma once 'cause not a header
-
 #include <iostream>
 #include <set>
 #include <map>
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <cstdint>
 #include <stdexcept>
-
-using i32 = int32_t;
-using u64 = uint64_t;
 
 class Date
 {
 public:
-	Date() = default;
-	Date(i32 year, i32 month, i32 day);
+	Date(int year, int month, int day);
 
-	i32 GetYear() const;
-	i32 GetMonth() const;
-	i32 GetDay() const;
+	int GetYear() const noexcept;
+	int GetMonth() const noexcept;
+	int GetDay() const noexcept;
 private:
-
-	// Not consts 'cause I use operator>> with the date
-	i32 m_year = 0;
-	i32 m_month = 0;
-	i32 m_day = 0;
+	const int m_year;
+	const int m_month;
+	const int m_day;
 };
 
 /* Region: Date implementation */
 
-Date::Date(i32 year, i32 month, i32 day) :
+Date::Date(int year, int month, int day) :
 	m_year(year),
 	m_month(month),
 	m_day(day)
@@ -39,81 +30,70 @@ Date::Date(i32 year, i32 month, i32 day) :
 	if (month < 1 or month > 12)
 	{
 		std::cout << "Month value is invalid: " << month << '\n';
-		throw std::runtime_error("Wrong month value");
+		throw std::bad_cast();
 	}
 	else if (day < 1 or day > 31)
 	{
 		std::cout << "Day value is invalid: " << day << '\n';
-		throw std::runtime_error("Wrong day value");
+		throw std::bad_cast();
 	}
 }
 
-i32 Date::GetYear() const
+int Date::GetYear() const noexcept
 {
 	return m_year;
 }
 
-i32 Date::GetMonth() const
+int Date::GetMonth() const noexcept
 {
 	return m_month;
 }
 
-i32 Date::GetDay() const
+int Date::GetDay() const noexcept
 {
 	return m_day;
 }
 
-bool operator<(const Date& lhs, const Date& rhs)
+constexpr bool operator<(const Date& lhs, const Date& rhs) noexcept
 {
-	i32 y1 = lhs.GetYear();
-	i32 y2 = rhs.GetYear();
-	i32 m1 = lhs.GetMonth();
-	i32 m2 = rhs.GetMonth();
-	i32 d1 = lhs.GetDay();
-	i32 d2 = rhs.GetDay();
-	return (std::tie(y1, m1, d1) < std::tie(y2, m2, d2));
+	return (std::make_tuple(lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()) <
+		std::make_tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay()));
 }
 
-std::ostream& operator<<(std::ostream& out, const Date& date)
+std::ostream& operator<<(std::ostream& out, const Date& date) noexcept
 {
-	// I wanna print negative years anyway.
-	// I've read that it's not necessary.
-	bool negative = date.GetYear() < 0;
-	out << (negative ? "-" : "") << std::setw(4) << std::setfill('0') << std::abs(date.GetYear()) << '-'
-		<< std::setw(2) << std::setfill('0') << date.GetMonth() << '-'
-		<< std::setw(2) << std::setfill('0') << date.GetDay();
+	out << (date.GetYear() < 0 ? "-" : "") << std::setw(4) << std::setfill('0')
+		<< std::abs(date.GetYear()) << '-' << std::setw(2) << std::setfill('0')
+		<< date.GetMonth() << '-' << std::setw(2) << std::setfill('0') << date.GetDay();
 	return out;
 }
 
-std::istream& operator>>(std::istream& is, Date& date)
+std::istream& operator>>(std::istream& is, std::shared_ptr<Date>& date) noexcept(false)
 {
 	std::string date_buffer;
 	is >> date_buffer;
 	std::istringstream date_is(date_buffer);
-	i32 year, month, day;
-	char delimiter;
-	std::streampos index = date_is.tellg();
-	date_is >> year;
-	if (date_is.tellg() - index > 4)
+	constexpr auto read_number = [](std::istream& is) noexcept(false)
+		{
+			int number;
+			is >> number;
+			if (is.fail() or (is.peek() != '-' and not is.eof()))
+				throw std::runtime_error("");
+			is.ignore(1);
+			return number;
+		};
+	try
+	{
+		int year = read_number(date_is);
+		int month = read_number(date_is);
+		int day = read_number(date_is);
+		date.reset(new Date(year, month, day));
+	}
+	catch (const std::runtime_error&)
 	{
 		std::cout << "Wrong date format: " << date_buffer << '\n';
-		throw std::runtime_error("Wrong date format");
+		throw;
 	}
-	index = date_is.tellg();
-	date_is >> delimiter >> month;
-	if (delimiter != '-' or date_is.tellg() - index > 3)
-	{
-		std::cout << "Wrong date format: " << date_buffer << '\n';
-		throw std::runtime_error("Wrong date format");
-	}
-	index = date_is.tellg();
-	date_is >> delimiter >> day;
-	if (delimiter != '-' or date_is.fail() or not date_is.eof() or date_is.tellg() - index > 3)
-	{
-		std::cout << "Wrong date format: " << date_buffer << '\n';
-		throw std::runtime_error("Wrong date format");
-	}
-	date = Date(year, month, day);
 	return is;
 }
 
@@ -122,14 +102,13 @@ std::istream& operator>>(std::istream& is, Date& date)
 class Database
 {
 public:
-	void AddEvent(const Date& date, const std::string& event);
-	bool DeleteEvent(const Date& date, const std::string& event);
-	u64  DeleteDate(const Date& date);
+	void AddEvent(const Date& date, const std::string& event) noexcept;
+	bool DeleteEvent(const Date& date, const std::string& event) noexcept;
+	size_t  DeleteDate(const Date& date) noexcept;
 
-	const std::set<std::string>& Find(const Date& date) const;
+	std::set<std::string> Find(const Date& date) const noexcept;
 
-	// Not SOLID probably, not good, not sure...
-	void Print() const;
+	void Print() const noexcept;
 private:
 
 	std::map<Date, std::set<std::string>> m_db;
@@ -137,36 +116,38 @@ private:
 
 /* Region: Database implementation */
 
-void Database::AddEvent(const Date& date, const std::string& event)
+void Database::AddEvent(const Date& date, const std::string& event) noexcept
 {
 	m_db[date].insert(event);
 }
 
-bool Database::DeleteEvent(const Date& date, const std::string& event)
+bool Database::DeleteEvent(const Date& date, const std::string& event) noexcept
 {
-	if (not m_db.contains(date) or not m_db[date].contains(event))
-		return false;
-	return m_db[date].erase(event) > 0;
+	if (m_db.contains(date) and m_db[date].contains(event))
+	{
+		m_db[date].erase(event);
+		return true;
+	}
+	return false;
 }
 
-u64 Database::DeleteDate(const Date& date)
+size_t Database::DeleteDate(const Date& date) noexcept
 {
 	if (not m_db.contains(date))
 		return 0;
-	u64 result = m_db[date].size();
+	size_t result = m_db[date].size();
 	m_db.erase(date);
 	return result;
 }
 
-static std::set<std::string> empty_set = {};
-
-const std::set<std::string>& Database::Find(const Date& date) const
+std::set<std::string> Database::Find(const Date& date) const noexcept
 {
-	if (not m_db.contains(date)) return empty_set;
-	return m_db.at(date);
+	if (m_db.contains(date))
+		 return m_db.at(date);
+	return {};
 }
 
-void Database::Print() const
+void Database::Print() const noexcept
 {
 	for (const auto& [date, events] : m_db)
 	{
@@ -181,67 +162,70 @@ void Database::Print() const
 
 /* Region: Base functions */
 
-void Add(Database& db, std::istringstream& line)
+void handle_request(Database& db, std::istringstream& is) noexcept(false)
 {
-	std::string event;
-	Date date;
-	line >> date >> event;
-	db.AddEvent(date, event);
-}
-
-void Del(Database& db, std::istringstream& line)
-{
-	std::string event;
-	Date date;
-	line >> date;
-	if (not line.eof())
+	std::string command;
+	is >> command;
+	if (command == "Add")
 	{
-		line >> event;
-		if (db.DeleteEvent(date, event))
-			std::cout << "Deleted successfully\n";
+		std::string event;
+		std::shared_ptr<Date> date;
+		is >> date >> event;
+		db.AddEvent(*date, event);
+	}
+	else if (command == "Del")
+	{
+		std::string event;
+		std::shared_ptr<Date> date;
+		is >> date;
+		if (not is.eof())
+		{
+			is >> event;
+			if (db.DeleteEvent(*date, event))
+				std::cout << "Deleted successfully\n";
+			else
+				std::cout << "Event not found\n";
+		}
 		else
-			std::cout << "Event not found\n";
+		{
+			std::cout << "Deleted " << db.DeleteDate(*date) << " events\n";
+		}
+	}
+	else if (command == "Find")
+	{
+		std::shared_ptr<Date> date;
+		is >> date;
+		for (const auto& each : db.Find(*date))
+		{
+			std::cout << each << '\n';
+		}
+	}
+	else if (command == "Print")
+	{
+		db.Print();
 	}
 	else
 	{
-		std::cout << "Deleted " << db.DeleteDate(date) << " events\n";
+		std::cout << "Unknown command: " << command << '\n';
+		throw std::runtime_error("");
 	}
 }
 
-void Find(Database& db, std::istringstream& line)
-{
-	Date date;
-	line >> date;
-	for (const auto& each : db.Find(date))
-	{
-		std::cout << each << '\n';
-	}
-}
-
-i32 main()
+int main() noexcept
 {
 	Database db;
 
 	std::string commandLine;
 	while (std::getline(std::cin, commandLine))
 	{
-		if (commandLine == "") continue;
-		std::istringstream line(commandLine);
-		std::string command;
-		line >> command;
+		if (commandLine == "")
+			continue;
 		try
 		{
-			if (command == "Add") Add(db, line);
-			else if (command == "Del") Del(db, line);
-			else if (command == "Find") Find(db, line);
-			else if (command == "Print") db.Print();
-			else
-			{
-				std::cout << "Unknown command: " << command << '\n';
-				break;
-			}
+			std::istringstream line(commandLine);
+			handle_request(db, line);
 		}
-		catch (const std::runtime_error&)
+		catch (const std::exception&)
 		{
 			break;
 		}
