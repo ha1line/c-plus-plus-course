@@ -65,21 +65,7 @@ i32 Date::GetDay() const
 
 bool operator<(const Date& lhs, const Date& rhs)
 {
-	if (lhs.GetYear() < rhs.GetYear())
-	{
-		return true;
-	}
-	else if (lhs.GetYear() == rhs.GetYear() and lhs.GetMonth() < rhs.GetMonth())
-	{
-		return true;
-	}
-	else if (lhs.GetYear() == rhs.GetYear() and
-			 lhs.GetMonth() == rhs.GetMonth() and
-			 lhs.GetDay() < rhs.GetDay())
-	{
-		return true;
-	}
-	return false;
+	return (std::tie(lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()) < std::tie(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay()));
 }
 
 std::ostream& operator<<(std::ostream& out, const Date& date)
@@ -157,7 +143,7 @@ bool Database::DeleteEvent(const Date& date, const std::string& event)
 u64 Database::DeleteDate(const Date& date)
 {
 	if (not m_db.contains(date))
-		return false;
+		return 0;
 	u64 result = m_db[date].size();
 	m_db[date].clear();
 	m_db.erase(date);
