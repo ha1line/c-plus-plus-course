@@ -108,12 +108,12 @@ std::istream& operator>>(std::istream& is, Date& date)
 	}
 	index = date_is.tellg();
 	date_is >> delimiter >> day;
-	if (delimiter != '-' or date_is.fail() or date_is.tellg() - index > 3)
+	if (delimiter != '-' or date_is.fail() or not date_is.eof() or date_is.tellg() - index > 3)
 	{
 		std::cout << "Wrong date format: " << date_buffer << '\n';
 		throw std::runtime_error("Wrong date format");
 	}
-	date = { year, month, day };
+	date = Date(year, month, day);
 	return is;
 }
 
@@ -154,7 +154,6 @@ u64 Database::DeleteDate(const Date& date)
 	if (not m_db.contains(date))
 		return 0;
 	u64 result = m_db[date].size();
-	m_db[date].clear();
 	m_db.erase(date);
 	return result;
 }
@@ -182,7 +181,7 @@ void Database::Print() const
 
 /* Region: Base functions */
 
-void Add(Database& db, std::stringstream& line)
+void Add(Database& db, std::istringstream& line)
 {
 	std::string event;
 	Date date;
@@ -190,7 +189,7 @@ void Add(Database& db, std::stringstream& line)
 	db.AddEvent(date, event);
 }
 
-void Del(Database& db, std::stringstream& line)
+void Del(Database& db, std::istringstream& line)
 {
 	std::string event;
 	Date date;
@@ -209,7 +208,7 @@ void Del(Database& db, std::stringstream& line)
 	}
 }
 
-void Find(Database& db, std::stringstream& line)
+void Find(Database& db, std::istringstream& line)
 {
 	Date date;
 	line >> date;
@@ -227,7 +226,7 @@ i32 main()
 	while (std::getline(std::cin, commandLine))
 	{
 		if (commandLine == "") continue;
-		std::stringstream line(commandLine);
+		std::istringstream line(commandLine);
 		std::string command;
 		line >> command;
 		try
