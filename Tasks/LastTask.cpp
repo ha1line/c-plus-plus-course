@@ -65,7 +65,13 @@ i32 Date::GetDay() const
 
 bool operator<(const Date& lhs, const Date& rhs)
 {
-	return (std::tie(lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()) < std::tie(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay()));
+	i32 y1 = lhs.GetYear();
+	i32 y2 = rhs.GetYear();
+	i32 m1 = lhs.GetMonth();
+	i32 m2 = rhs.GetMonth();
+	i32 d1 = lhs.GetDay();
+	i32 d2 = rhs.GetDay();
+	return (std::tie(y1, m1, d1) < std::tie(y2, m2, d2));
 }
 
 std::ostream& operator<<(std::ostream& out, const Date& date)
