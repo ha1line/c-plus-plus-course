@@ -87,27 +87,30 @@ std::ostream& operator<<(std::ostream& out, const Date& date)
 
 std::istream& operator>>(std::istream& is, Date& date)
 {
+	std::string date_buffer;
+	is >> date_buffer;
+	std::istringstream date_is(date_buffer);
 	i32 year, month, day;
 	char delimiter;
-	std::streampos index = is.tellg();
-	is >> year;
-	if (is.tellg() - index > 4)
+	std::streampos index = date_is.tellg();
+	date_is >> year;
+	if (date_is.tellg() - index > 4)
 	{
-		std::cout << "Wrong date format: " << date << '\n';
+		std::cout << "Wrong date format: " << date_buffer << '\n';
 		throw std::runtime_error("Wrong date format");
 	}
-	index = is.tellg();
-	is >> delimiter >> month;
+	index = date_is.tellg();
+	date_is >> delimiter >> month;
 	if (delimiter != '-' or is.tellg() - index > 3)
 	{
-		std::cout << "Wrong date format: " << date << '\n';
+		std::cout << "Wrong date format: " << date_buffer << '\n';
 		throw std::runtime_error("Wrong date format");
 	}
-	index = is.tellg();
-	is >> delimiter >> day;
-	if (delimiter != '-' or is.fail() or is.tellg() - index > 3)
+	index = date_is.tellg();
+	date_is >> delimiter >> day;
+	if (delimiter != '-' or date_is.fail() or date_is.tellg() - index > 3)
 	{
-		std::cout << "Wrong date format: " << date << '\n';
+		std::cout << "Wrong date format: " << date_buffer << '\n';
 		throw std::runtime_error("Wrong date format");
 	}
 	date = { year, month, day };
