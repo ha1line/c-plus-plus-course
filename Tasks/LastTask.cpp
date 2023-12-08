@@ -101,7 +101,7 @@ std::istream& operator>>(std::istream& is, Date& date)
 	}
 	index = date_is.tellg();
 	date_is >> delimiter >> month;
-	if (delimiter != '-' or is.tellg() - index > 3)
+	if (delimiter != '-' or date_is.tellg() - index > 3)
 	{
 		std::cout << "Wrong date format: " << date_buffer << '\n';
 		throw std::runtime_error("Wrong date format");
