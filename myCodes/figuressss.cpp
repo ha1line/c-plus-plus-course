@@ -7,6 +7,9 @@
 #include <vector>
 #include <math.h>
 #include <cstdint>
+#include <exception>
+
+
 
 class Figure
 {
@@ -36,21 +39,21 @@ public:
     }
     double Area() const final
     {
-        double p = (m_a + m_b + m_c) / 2;
+        double p = (m_a + m_b + m_c) / 2.0;
         return sqrt(p * (p - m_a) * (p - m_b) * (p - m_c));
     }
 
 private:
-    uint16_t m_a;
-    uint16_t m_b;
-    uint16_t m_c;
+    const uint16_t m_a;
+    const uint16_t m_b;
+    const uint16_t m_c;
 };
 
 class Rectangle : public Figure
 {
 public:
-    Rectangle(uint16_t width, uint16_t height) : m_width(width),
-                                        m_height(height)
+    Rectangle(uint16_t a, uint16_t b) : m_a(a),
+                                        m_b(b)
     {
     }
 
@@ -61,17 +64,17 @@ public:
 
     double Perimeter() const final
     {
-        return 2 * m_width + 2 * m_height;
+        return 2 * m_a + 2 * m_b;
     }
 
     double Area() const final
     {
-        return m_width * m_height;
+        return m_a * m_b;
     }
 
 private:
-    uint16_t m_width;
-    uint16_t m_height;
+    const uint16_t m_a;
+    const uint16_t m_b;
 };
 
 class Circle : public Figure
@@ -97,7 +100,7 @@ public:
     }
 
 private:
-    uint16_t m_radius;
+    const uint16_t m_radius;
     const double m_pi = 3.14;
 };
 
@@ -118,9 +121,9 @@ std::shared_ptr<Figure> CreateFigure(std::istream &is)
 
     else if (figure == "TRIANGLE")
     {
-        uint16_t a;
-        uint16_t b;
-        uint16_t c;
+        int a;
+        int b;
+        int c;
         is >> a;
         is.ignore(1);
         is >> b;
@@ -136,6 +139,9 @@ std::shared_ptr<Figure> CreateFigure(std::istream &is)
         return std::make_shared<Circle>(radius);
     }
 
+    else{
+        throw std::runtime_error("Wrong figure name");
+    }
     return nullptr;
 }
 
@@ -147,20 +153,27 @@ int main()
         std::istringstream is(line);
         std::string command;
         is >> command;
-        if (command == "ADD")
+        try
         {
-            is >> std::ws;
-            figures.push_back(CreateFigure(is));
-        }
-        else if (command == "PRINT")
-        {
-            for (const auto &current_figure : figures)
+            if (command == "ADD")
             {
-                std::cout << std::fixed << std::setprecision(3)
-                          << current_figure->Name() << " "
-                          << current_figure->Perimeter() << " "
-                          << current_figure->Area() << std::endl;
+                is >> std::ws;
+                figures.push_back(CreateFigure(is));
             }
+            else if (command == "PRINT")
+            {
+                for (const auto &current_figure : figures)
+                {
+                    std::cout << std::fixed << std::setprecision(3)
+                            << current_figure->Name() << " "
+                            << current_figure->Perimeter() << " "
+                            << current_figure->Area() << std::endl;
+                }
+            }
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << e.what() << '\n';
         }
     }
     return 0;
