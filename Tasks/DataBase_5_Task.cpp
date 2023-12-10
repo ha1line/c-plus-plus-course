@@ -72,7 +72,7 @@ public:
 
     bool DeleteEvent(const Date& date, const std::string& event)
     {
-        if (m_dataBase.countains(date) && m_dataBase[date].countains(event)) //countains
+        if (m_dataBase.contains(date) && m_dataBase[date].contains(event)) //countains
         {
            m_dataBase[date].erase(event);
            std::cout << "Deleted successfully" << std::endl;
@@ -85,7 +85,7 @@ public:
     int  DeleteDate(const Date& date)
     {
         const size_t countEventOnDate = m_dataBase[date].size();
-        if (m_dataBase.countains(date)) //countains
+        if (m_dataBase.contains(date)) //countains
         {
             m_dataBase.erase(date);
             std::cout << "Deleted" << " " << countEventOnDate << " " << "events" << std::endl;
@@ -95,7 +95,7 @@ public:
   
     std::set<std::string> Find(const Date& date) const
     {
-        if (!m_dataBase.countains(date)) //countains
+        if (!m_dataBase.contains(date)) //countains
         {
             return {};
         }
