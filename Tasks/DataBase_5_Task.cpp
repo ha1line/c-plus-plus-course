@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <vector>
 #include <exception>
-
+#include <array>
 class Date
 {
 public:
@@ -14,6 +14,14 @@ public:
     m_year(year), 
     m_month(month), m_day(day)
     {
+        if (m_month < 1 || m_month > 12)
+        {
+            throw std::invalid_argument("Month value is invalid: " + std::to_string(m_month));
+        }
+        if (m_day < 1 || m_day > 31)
+        {
+            throw std::invalid_argument("Day value is invalid: " + std::to_string(m_day));
+        }
     }
     int GetYear() const
     {
@@ -28,9 +36,9 @@ public:
         return m_day;
     }
 private:
-    int m_year;
-    int m_month;
-    int m_day;
+    const int m_year;
+    const int m_month;
+    const int m_day;
 };
 
 bool operator<(const Date& lhs, const Date& rhs)
@@ -44,23 +52,31 @@ bool operator<(const Date& lhs, const Date& rhs)
         return lhs.GetMonth() < rhs.GetMonth();
     }
     return lhs.GetYear() < rhs.GetYear();
-}
+};
+
+std::ostream& operator<<(std::ostream& os, const Date& date)
+{
+    os << std::setfill('0') << std::setw(4)<<date.GetYear() << "-"
+        << std::setfill('0') << std::setw(2)<<date.GetMonth() << "-"
+            << std::setfill('0') << std::setw(2)<<date.GetDay();
+    return os;
+};
 
 class Database
 {
 public:
     void AddEvent(const Date& date, const std::string& event)
     {
-        dataBase[date].insert(event);
+        m_dataBase[date].insert(event);
     }
 
     bool DeleteEvent(const Date& date, const std::string& event)
     {
-        if (dataBase[date].count(event) != 0)
+        if (m_dataBase.count(date) != 0 && m_dataBase[date].count(event) != 0 ) //countains
         {
-            dataBase[date].erase(event);
-            std::cout << "Deleted successfully" << std::endl;
-            return true;
+           m_dataBase[date].erase(event);
+           std::cout << "Deleted successfully" << std::endl;
+           return true;
         }
         std::cout << "Event not found" << std::endl;
         return false;
@@ -68,97 +84,56 @@ public:
 
     int  DeleteDate(const Date& date)
     {
-        int countEventOnDate = dataBase[date].size();
-        dataBase[date].clear();
-        std::cout << "Deleted" << " " << countEventOnDate << " " << "events" << std::endl;
+        const size_t countEventOnDate = m_dataBase[date].size();
+        if (m_dataBase.count(date) != 0 ) //countains
+        {
+            m_dataBase.erase(date);
+            std::cout << "Deleted" << " " << countEventOnDate << " " << "events" << std::endl;
+        }
         return countEventOnDate;
     }
   
-    void Find(const Date& date) const
+    std::set<std::string> Find(const Date& date) const
     {
-        for (const auto& event : dataBase.at(date))
+        if (!m_dataBase.count(date) != 0 ) //countains
         {
-            std::cout << event << std::endl;
+            return {};
         }
+        return m_dataBase.at(date);
     }
     
     void Print() const
     {
-        for (const auto& [date, events] : dataBase)
+        for (const auto& [date, events] : m_dataBase)
         {
             for (const auto& event : events)
             {
-                std::cout << std::setfill('0') << std::setw(4)<<date.GetYear() << "-";
-                std::cout << std::setfill('0') << std::setw(2)<<date.GetMonth() << "-";
-                std::cout << std::setfill('0') << std::setw(2)<<date.GetDay() << " ";
-                std::cout << event << std::endl;
+                std::cout << date << " " << event << std::endl;
             }
         }
     }
 private:
-    std::map<Date, std::set<std::string>> dataBase {};
+    std::map<Date, std::set<std::string>> m_dataBase;
 };
 
 Date date_prossesing(std::string& date)
 {
-    std::string partDate = "";
-    std::vector <int> shaterredDate (3);
-    for (size_t i = 0, j = 0; i != date.size(); ++i)
+    std::istringstream stream(date);
+    std::array <int,3> shaterredDate;
+    for (size_t j = 0; j != shaterredDate.size(); ++j)
     {
-        if (date[i] != '-' || 
-            (i + 1 < date.size()  && i > 0 && date[i + 1] != '-' && date[i - 1] == '-') 
-                || i == 0)
+        int partDate;
+        stream >> partDate;
+        if ((stream.peek() != '-' && j != 2) || (!stream.eof() && j == 2))
         {
-            partDate+=date[i];
+            std::string message = "Wrong date format: " + date;
+            throw std::invalid_argument(message);
         }
-        else
-        {
-            if ((i - 1 == 0 && date[i - 1] == '-') || i + 1 >= date.size() 
-                || ( i + 1 < date.size() && date[i + 1] == '-' && i > 0 && date[i - 1] == '-'))
-            {
-                std::string message = "Wrong date format: " + date;
-                throw std::invalid_argument(message);
-            }
-            else
-            {
-                try
-                {
-                    shaterredDate[j] = stoi(partDate);
-                    ++j;
-                    partDate = "";
-                }
-                catch (const std::exception& e)
-                {
-                    std::string message = "Wrong date format: " + date;
-                    throw std::invalid_argument(message);
-                }
-            }
-        }
-        if (i + 1 == date.size())
-        {
-            try
-            {
-                shaterredDate[j] = stoi(partDate);
-                ++j;
-                partDate = "";
-            }
-            catch (const std::exception& e)
-            {
-                std::string message = "Wrong date format: " + date;
-                throw std::invalid_argument(message);
-            }
-        }
-    }
-    if (shaterredDate[1] < 1 || shaterredDate[1] > 12)
-    {
-        throw std::invalid_argument("Month value is invalid: " + std::to_string(shaterredDate[1]));
-    }
-    if (shaterredDate[2] < 1 || shaterredDate[2] > 31)
-    {
-        throw std::invalid_argument("Day value is invalid: " + std::to_string(shaterredDate[2]));
+        shaterredDate[j] = partDate;
+        stream.ignore(1);
     }
     return Date(shaterredDate[0], shaterredDate[1], shaterredDate[2]);
-}
+};
 
 int main()
 {
@@ -170,53 +145,58 @@ int main()
         {
             continue;
         }  
-        std::string nameCommand;
-        std::istringstream stream(commandLine);
-        stream >> nameCommand;
-        if (nameCommand != "Print" && nameCommand != "Add" && nameCommand != "Del" && nameCommand != "Find")
+        try
         {
-            std::cout<<"Unknown command:"<<" "<<nameCommand<<std::endl;
-            return 0;
-        }
-        if (nameCommand == "Print")
-        {
-            db.Print();
-        }
-        else
-        {
-            try
+            std::string nameCommand;
+            std::istringstream stream(commandLine);
+            std::string dateToString, event;
+            stream >> nameCommand;
+            
+            if (nameCommand == "Print")
             {
-                std::string dateToString, event;
+                db.Print();
+            }
+            else if (nameCommand == "Add")
+            {
                 stream >> dateToString;
                 Date fullDate = date_prossesing(dateToString);
-                if (nameCommand == "Add")
-                {
-                    stream >> event;
-                    db.AddEvent(fullDate,event);
-                }
-                if (nameCommand == "Del")
-                {
-                    stream >> event;
-                    if (event.empty())
-                    {
-                        db.DeleteDate(fullDate);
-                    }
-                    else
-                    {
-                        db.DeleteEvent(fullDate,event);
-                    }
-                }
-                if (nameCommand == "Find")
-                {
-                    db.Find(fullDate);
-                }
+                stream >> event;
+                db.AddEvent(fullDate,event);
             }
-            catch(const std::exception& e)
+            else if (nameCommand == "Del")
             {
-                std::cout << e.what() << std::endl;
-                return 0;
+                stream >> dateToString;
+                Date fullDate = date_prossesing(dateToString);
+                stream >> event;
+                if (event.empty())
+                {
+                    db.DeleteDate(fullDate);
+                }
+                else
+                {
+                    db.DeleteEvent(fullDate,event);
+                }
             }
+            else if (nameCommand == "Find")
+            {
+                stream >> dateToString;
+                Date fullDate = date_prossesing(dateToString);
+                for (const auto& event : db.Find(fullDate))
+                {
+                    std::cout << event << std::endl;
+                }
+            }
+            else
+            {
+                std::string message ="Unknown command: " + nameCommand;
+                throw std::invalid_argument(message);
+            }
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << e.what() << std::endl;
+            return 0;
         }
     }
     return 0;
-}
+};
