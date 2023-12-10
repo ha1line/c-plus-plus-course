@@ -1,11 +1,22 @@
 #include "commands.h"
 
-Commands::CommandCallback Commands::FindCallback(const std::string_view command) const {
-	if(const auto it = commands.find( command ); it != commands.end()) {
-		return it->second;
+void Commands::DispatchCallback(const std::string & input) {
+	if( input.empty(  ) ) {
+		return;
 	}
-	return {};
+	std::stringstream input_stream(input);
+
+	std::string command;
+	input_stream >> command;
+
+	const auto it = commands.find( command );
+	if( it == commands.end()) {
+		throw std::runtime_error( "Unknown command: " + command );
+	}
+
+	it->second(input_stream);
 }
-void Commands::RegCommand(const std::string_view command, CommandCallback && callback) {
-	commands[std::string(command)] = std::move(callback);
+
+void Commands::RegCommand(std::string command, CommandCallback && callback) {
+	commands[std::move(command)] = std::move(callback);
 }

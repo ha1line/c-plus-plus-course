@@ -6,7 +6,7 @@
 
 class Date {
 public:
-	explicit Date(std::stringstream & stream);
+	Date(int year, int month, int day);
 
 	int GetYear() const {
 		return year_;
@@ -22,11 +22,12 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& os, const Date& date);
 	friend bool operator<(const Date& lhs, const Date& rhs);
-
 private:
-	int year_;
-	int month_;
-	int day_;
+	const int year_;
+	const int month_;
+	const int day_;
 };
+
+Date ParseDate(std::stringstream & stream);
 
 #endif //DATE_H

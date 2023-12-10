@@ -1,33 +1,9 @@
 #include "date.h"
 
 #include <iomanip>
-#include <tuple>
 
-Date::Date(std::stringstream & stream) {
-	const auto readValue = [](std::stringstream & stream){
-		int value;
-		stream >> value;
-		if( stream.fail(  ) || (!stream.eof() && stream.peek() != '-') ) {
-			throw std::runtime_error("");
-		}
-		stream.ignore(1);
-		return value;
-	};
-
-	std::string input;
-	stream >> input;
-
-	std::stringstream tempstream(input);
-	try {
-		year_ = readValue(tempstream);
-		month_ = readValue(tempstream);
-		day_ = readValue(tempstream);
-		if( !tempstream.eof() ) {
-			throw std::runtime_error("");
-		}
-	} catch( ... ) {
-		throw std::runtime_error("Wrong date format: " + input);
-	}
+Date::Date(const int year,const int month,const int day) :
+	year_(year), month_(month), day_(day) {
 
 	if( !(month_ >= 1 && month_ <= 12) ) {
 		throw std::runtime_error( "Month value is invalid: " + std::to_string(month_) );
@@ -47,4 +23,33 @@ std::ostream& operator<<(std::ostream& os, const Date& date) {
 bool operator<(const Date& lhs, const Date& rhs) {
 	return std::tie(lhs.year_, lhs.month_, lhs.day_) <
 		   std::tie(rhs.year_, rhs.month_, rhs.day_);
+}
+
+bool readValue(std::stringstream &stream, int &outvar) {
+	if( !(stream >> outvar) ) {
+		return false;
+	}
+	if( !stream.eof(  ) && stream.peek() != '-' ) {
+		return false;
+	}
+	stream.ignore(1);
+	return true;
+}
+
+Date ParseDate(std::stringstream & stream) {
+	std::string input;
+	stream >> input;
+
+	std::stringstream tempstream(input);
+
+	int year = 0, month = 0, day = 0;
+	bool okay =	readValue(tempstream, year) &&
+				readValue(tempstream, month) &&
+				readValue(tempstream, day);
+
+	if( !okay ) {
+		throw std::runtime_error("Wrong date format: " + input);
+	}
+
+	return {year, month, day};
 }

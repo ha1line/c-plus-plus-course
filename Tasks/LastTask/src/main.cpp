@@ -1,60 +1,56 @@
 #include <iostream>
 
-#include "src/database.h"
-#include "src/commands.h"
+#include "database.h"
+#include "commands.h"
 
 std::tuple<Date, std::string> ParseDateAndEvent(std::stringstream &stream) {
-	const auto date = Date(stream);
+	const auto date = ParseDate(stream);
 	std::string event;
 	stream >> event;
 	return {date, event};
 }
 
-int main() {
-	Database db;
-	Commands commands;
+Database db;
+Commands commands;
 
-	commands.RegCommand( "Add",[&db](std::stringstream &stream) {
-		const auto [date, event] = ParseDateAndEvent( stream );
-		db.AddEvent( date, event );
-	});
+void AddDateCallback(std::stringstream &stream) {
+	const auto [date, event] = ParseDateAndEvent( stream );
+	db.AddEvent( date, event );
+}
 
-	commands.RegCommand( "Del",[&db](std::stringstream &stream) {
-		const auto [date, event] = ParseDateAndEvent( stream );
-		if( !event.empty(  )) {
-			if( db.DeleteEvent( date, event ) ) {
-				std::cout << "Deleted successfully" << '\n';
-			} else {
-				std::cout << "Event not found" << '\n';
-			}
+void DelDateCallback(std::stringstream &stream) {
+	const auto [date, event] = ParseDateAndEvent( stream );
+	if( !event.empty(  )) {
+		if( db.DeleteEvent( date, event ) ) {
+			std::cout << "Deleted successfully" << '\n';
 		} else {
-			std::cout << "Deleted " << db.DeleteDate( date ) << " events" << '\n';
+			std::cout << "Event not found" << '\n';
 		}
-	});
+	} else {
+		std::cout << "Deleted " << db.DeleteDate( date ) << " events" << '\n';
+	}
+}
 
-	commands.RegCommand( "Find",[&db](std::stringstream &stream) {
-		for( const auto &e : db.Find( Date{stream} ) ) {
-			std::cout << e << '\n';
- 		}
-	});
+void FindDateCallback(std::stringstream &stream) {
+	for( const auto &e : db.Find( ParseDate(stream) ) ) {
+		std::cout << e << '\n';
+	}
+}
 
-	commands.RegCommand( "Print",[&db](std::stringstream &stream) {
-		db.Print(  );
-	});
+void PrintDatesCallback(std::stringstream &) {
+	db.Print(  );
+}
+
+int main() {
+	commands.RegCommand( "Add", AddDateCallback);
+	commands.RegCommand( "Del", DelDateCallback);
+	commands.RegCommand( "Find", FindDateCallback);
+	commands.RegCommand( "Print", PrintDatesCallback);
 
 	try {
 		std::string commandLine;
 		while (std::getline(std::cin, commandLine)) {
-			if( commandLine.empty(  ) ) {
-				continue;
-			}
-			std::stringstream input(commandLine);
-			std::string operation; input >> operation;
-			if( const auto callback = commands.FindCallback(operation); callback ) {
-				callback(input);
-			} else {
-				throw std::runtime_error( "Unknown command: " + std::string(operation) );
-			}
+			commands.DispatchCallback(commandLine);
 		}
 	} catch (const std::exception &e) {
 		std::cout << e.what() << std::endl;
