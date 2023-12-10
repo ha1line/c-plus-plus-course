@@ -70,7 +70,7 @@ public:
 
     bool DeleteEvent(const Date& date, const string& event) noexcept
     {
-        if (!m_storage[date].contains(event))
+        if (!m_storage.contains(date) || !m_storage[date].contains(event))
         {
             return false;
         }
