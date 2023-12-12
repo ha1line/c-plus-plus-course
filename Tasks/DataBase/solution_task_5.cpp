@@ -8,48 +8,46 @@ class Date
 {
 public:
     Date(const int year, const int month, const int day):
-        m_year(year),
-        m_month(month),
-        m_day(day)
+            m_year(year),m_month(month),m_day(day)
     {
+        if(month<1 || month>12)
+        {
+            throw std::runtime_error( "Month value is invalid: " + std::to_string(month));
+        }
+        if(day<1 || day>31)
+        {
+            throw std::runtime_error( "Day value is invalid: " + std::to_string(day));
+        }
     }
-    [[nodiscard]] int GetYear() const
+    int GetYear() const
     {
         return m_year;
     }
-    [[nodiscard]] int GetMonth() const
+    int GetMonth() const
     {
         return m_month;
     }
-    [[nodiscard]] int GetDay() const
+    int GetDay() const
     {
         return m_day;
     }
-    [[nodiscard]] std::string ToStr() const
+    std::string FormatDateValue(const int nf_value, const int num) const
     {
-        return std::string(
-                formatYear(m_year)+"-"+
-                formatMonthOrDay(m_month)+"-"+
-                formatMonthOrDay(m_day)
-        );
+        std::stringstream ss;
+        ss << std::setfill('0') << std::setw(num) << nf_value;
+        return ss.str();
     }
 private:
-    [[nodiscard]] std::string formatYear(const int nf_year) const
-    {
-        std::stringstream ss;
-        ss << std::setfill('0') << std::setw(4) << nf_year;
-        return ss.str();
-    }
-    [[nodiscard]] std::string formatMonthOrDay(const int nf_monthday) const
-    {
-        std::stringstream ss;
-        ss << std::setfill('0') << std::setw(2) << nf_monthday;
-        return ss.str();
-    }
     const int m_year;
     const int m_month;
     const int m_day;
 };
+std::ostream& operator<<(std::ostream& ostream, const Date& date){
+    ostream << date.FormatDateValue(date.GetYear(),4) << "-"
+            << date.FormatDateValue(date.GetMonth(),2) << "-"
+            << date.FormatDateValue(date.GetDay(),2) ;
+    return ostream;
+}
 
 bool operator<(const Date& lhs, const Date& rhs)
 {
@@ -66,17 +64,11 @@ public:
     }
     bool DeleteEvent(const Date& date, const std::string& event)
     {
-        bool foundDate = container.contains(date);
-        bool foundEvent = false;
-        if(foundDate)
-        {
-            foundEvent = container[date].contains(event);
-            if(foundEvent )
-            {
-                container[date].erase(event);
-            }
+        if (container.contains(date) && container.at(date).contains(event)){
+            container[date].erase(event);
+            return true;
         }
-        return foundDate && foundEvent;
+        return false;
     }
 
     int DeleteDate(const Date& date)
@@ -92,7 +84,7 @@ public:
 
     [[nodiscard]] std::set<std::string> Find(const Date& date) const
     {
-        auto it = container.find(date);
+        const auto it = container.find(date);
         if(it == container.end())
         {
             return std::set<std::string>{};
@@ -104,12 +96,11 @@ public:
     {
         for (const auto& pair : container)
         {
-            std::string s_date = pair.first.ToStr();
             if(pair.first.GetYear()>=0)
             {
                 for(const auto& event : pair.second)
                 {
-                    std::cout << s_date <<" "<< event << std::endl;
+                    std::cout << pair.first <<" "<< event << std::endl;
                 }
             }
         }
@@ -120,29 +111,14 @@ private:
 
 Date GetDateFromString(const std::string& string)
 {
-    std::stringstream ss(string);
     int year, month, day;
-    try
-    {
-        std::stringstream stream(string);
-        char delimiter1;
-        char delimiter2;
-        stream >> year >> delimiter1 >> month >> delimiter2 >> day;
-        if(stream.fail() || !stream.eof() || delimiter1 != '-' || delimiter2 != '-')
-        {
-            throw std::runtime_error("Wrong date format: " + string);
-        }
-    }catch (std::exception)
+    std::stringstream stream(string);
+    char delimiter1;
+    char delimiter2;
+    stream >> year >> delimiter1 >> month >> delimiter2 >> day;
+    if(stream.fail() || !stream.eof() || delimiter1 != '-' || delimiter2 != '-')
     {
         throw std::runtime_error("Wrong date format: " + string);
-    }
-    if(month<1 || month>12)
-    {
-        throw std::runtime_error( "Month value is invalid: " + std::to_string(month));
-    }
-    if(day<1 || day>31)
-    {
-        throw std::runtime_error( "Day value is invalid: " + std::to_string(day));
     }
     return Date{year, month, day};
 }
@@ -203,7 +179,7 @@ int main()
             {
                 throw std::runtime_error("Unknown command: "+command);
             }
-        }catch (std::exception& exception)
+        }catch (const std::exception& exception)
         {
             std::cout << exception.what() << std::endl;
             break;
