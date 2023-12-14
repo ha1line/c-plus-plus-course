@@ -13,12 +13,12 @@ public:
                                          m_month(month),
                                          m_day(day)
     {
-        if (month > 12 || month <= 0)
+        if (month > 12 || month < 1)
         {
             throw std::runtime_error("Month value is invalid: " + std::to_string(month));
         }
 
-        if (day > 31 || day <= 0)
+        if (day > 31 || day < 1)
         {
             throw std::runtime_error("Day value is invalid: " + std::to_string(day));
         }
@@ -38,42 +38,22 @@ public:
         return m_day;
     }
 
-    static Date ReadDate(std::istream &stream)
+    void PrintDate() const
     {
-        int year, month, day;
-        std::string date;
-        std::getline(stream, date, ' ');
-
-        if (IsValidDate(year, month, day, date))
-        {
-            return Date(year, month, day);
-        }
+        SetFillSize(4);
+        std::cout << GetYear() << '-';
+        SetFillSize(2);
+        std::cout << GetMonth() << '-';
+        SetFillSize(2);
+        std::cout << GetDay();
     }
 
 private:
     int m_year, m_month, m_day;
-    static bool IsValidDate(int &year, int &month, int &day, std::string date)
+
+    static void SetFillSize(int size)
     {
-        std::stringstream is(date);
-        char delimiter;
-        char delimiter2;
-        if (is >> year >> delimiter >> month >> delimiter2 >> day)
-        {
-            if (delimiter == '-' && delimiter2 == '-' && is.get() == EOF)
-            {
-                return true;
-            }
-
-            else
-            {
-                throw std::runtime_error("Wrong date format: " + date);
-            }
-        }
-
-        else
-        {
-            throw std::runtime_error("Wrong date format: " + date);
-        }
+        std::cout << std::setw(size) << std::setfill('0');
     }
 };
 
@@ -99,11 +79,6 @@ public:
             return true;
         }
 
-        else
-        {
-            throw std::invalid_argument("Event not found");
-        }
-
         return false;
     }
 
@@ -115,38 +90,62 @@ public:
             m_dataBase.erase(date);
             return countLogs;
         }
-        
+
         return 0;
     }
 
     std::set<std::string> Find(const Date &date)
     {
-        if (m_dataBase.contains(date))
-        {
-            return m_dataBase[date];
-        }
-
-        return std::set<std::string>();
+        return (m_dataBase.contains(date) ? m_dataBase[date] 
+                                        : std::set<std::string>());
     }
 
     void Print() const
     {
-        for (const auto &pair : m_dataBase)
+        for (const auto &date_event : m_dataBase)
         {
-            for (const auto &log : pair.second)
+            for (const auto &event : date_event.second)
             {
-                std::cout << std::setw(4) << std::setfill('0');
-                std::cout << pair.first.GetYear() << '-';
-                std::cout << std::setw(2) << std::setfill('0');
-                std::cout << pair.first.GetMonth() << '-';
-                std::cout << std::setw(2) << std::setfill('0');
-                std::cout << pair.first.GetDay() << ' ' << log << std::endl;
+                date_event.first.PrintDate();
+                std::cout << ' ' << event << std::endl;
             }
         }
     };
 
 private:
     std::map<Date, std::set<std::string>> m_dataBase;
+};
+
+class Parser
+{
+public:
+    static Date ParseDate(std::istream &stream)
+    {
+        int year, month, day;
+        std::string date;
+        std::getline(stream, date, ' ');
+
+        std::stringstream is(date);
+        char delimiter;
+        char delimiter2;
+        if (is >> year >> delimiter >> month >> delimiter2 >> day)
+        {
+            if (delimiter == '-' && delimiter2 == '-' && is.get() == EOF)
+            {
+                return Date(year, month, day);
+            }
+
+            else
+            {
+                throw std::runtime_error("Wrong date format: " + date);
+            }
+        }
+
+        else
+        {
+            throw std::runtime_error("Wrong date format: " + date);
+        }
+    }
 };
 
 int main()
@@ -164,7 +163,7 @@ int main()
             is >> std::ws;
             if (command == "Add")
             {
-                Date date = Date::ReadDate(is);
+                Date date = Parser::ParseDate(is);
                 std::string event;
                 is >> event;
                 dataBase.Add(date, event);
@@ -172,7 +171,7 @@ int main()
 
             else if (command == "Del")
             {
-                Date date = Date::ReadDate(is);
+                Date date = Parser::ParseDate(is);
                 std::string event;
                 is >> event;
                 if (event.size() == 0)
@@ -185,12 +184,17 @@ int main()
                     {
                         std::cout << "Deleted successfully" << std::endl;
                     }
+
+                    else
+                    {
+                        throw std::invalid_argument("Event not found");
+                    }
                 }
             }
 
             else if (command == "Find")
             {
-                for (const auto &event : dataBase.Find(Date::ReadDate(is)))
+                for (const auto &event : dataBase.Find(Parser::ParseDate(is)))
                 {
                     std::cout << event << std::endl;
                 }
