@@ -115,7 +115,7 @@ public:
             m_dataBase.erase(date);
             return countLogs;
         }
-
+        
         return 0;
     }
 
