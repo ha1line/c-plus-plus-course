@@ -64,7 +64,7 @@ private:
     int m_day;
 };
 
-std::ostream& operator <<(std::ostream& os, Date date)
+std::ostream& operator <<(std::ostream& os, Date& date)
 {
     os << std::setfill('0');
     os << std::setw(4) << date.GetYear()  << "-";
