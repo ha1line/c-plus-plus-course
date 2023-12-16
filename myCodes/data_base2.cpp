@@ -40,21 +40,16 @@ public:
 
     void PrintDate() const
     {
-        SetFillSize(4);
+        std::cout << std::setw(4) << std::setfill('0');
         std::cout << GetYear() << '-';
-        SetFillSize(2);
+        std::cout << std::setw(2) << std::setfill('0');
         std::cout << GetMonth() << '-';
-        SetFillSize(2);
+        std::cout << std::setw(2) << std::setfill('0');
         std::cout << GetDay();
     }
 
 private:
     int m_year, m_month, m_day;
-
-    static void SetFillSize(int size)
-    {
-        std::cout << std::setw(size) << std::setfill('0');
-    }
 };
 
 bool operator<(const Date &lhs, const Date &rhs)
@@ -73,13 +68,7 @@ public:
 
     bool DeleteEvent(const Date &date, const std::string &event)
     {
-        if (m_dataBase.contains(date) && m_dataBase[date].contains(event))
-        {
-            m_dataBase[date].erase(event);
-            return true;
-        }
-
-        return false;
+        return m_dataBase[date].erase(event);
     }
 
     int DeleteDate(const Date &date)
@@ -110,7 +99,7 @@ public:
                 std::cout << ' ' << event << std::endl;
             }
         }
-    };
+    }
 
 private:
     std::map<Date, std::set<std::string>> m_dataBase;
@@ -147,6 +136,7 @@ public:
         }
     }
 };
+
 
 int main()
 {
