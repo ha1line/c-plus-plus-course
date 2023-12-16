@@ -6,12 +6,9 @@
 #include <iomanip>
 #include <sstream>
 
-static std::set<std::string> empty = {};
-
 class Date
 {
 public:
-    Date() = default;
     Date(short year, short month, short day) : m_year(year), m_month(month), m_day(day) {}
 
     short GetYear() const
@@ -29,62 +26,54 @@ public:
         return m_day;
     }
 private:
-    short m_year,
-          m_month,
-          m_day;
+    const short m_year,
+        m_month,
+        m_day;
 };
 
 // здесь советую воспользоваться трюком с вектором из лекции, либо std::tie
 bool operator<(const Date& lhs, const Date& rhs)
 {
-    short y1 = lhs.GetYear();
-    short y2 = rhs.GetYear();
-    short m1 = lhs.GetMonth();
-    short m2 = rhs.GetMonth();
-    short d1 = lhs.GetDay();
-    short d2 = rhs.GetDay();
-    return (std::tie(y1, m1, d1) < std::tie(y2, m2, d2));
+    return std::vector<int>{lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()} <
+        std::vector<int>{rhs.GetYear(), rhs.GetMonth(), rhs.GetDay()};
 }
 
 std::ostream& operator<<(std::ostream& os, const Date& date) {
-    bool negative = date.GetYear() < 0;
-    os << (negative ? "-" : "") << std::setw(4) << std::setfill('0') << std::abs(date.GetYear()) << '-'
+
+    os  << std::setw(4) << std::setfill('0') << date.GetYear() << '-'
         << std::setw(2) << std::setfill('0') << date.GetMonth() << '-'
         << std::setw(2) << std::setfill('0') << date.GetDay();
     return os;
 }
 
-std::istream& operator>>(std::istream& is, Date& date)
+Date readDate(const std::string& read)
 {
-    std::string date_buffer;
-    is >> date_buffer;
-    std::istringstream date_is(date_buffer);
+    std::istringstream date_is(read);
     short year, month, day;
     char delimiter;
     date_is >> year >> delimiter >> month;
     if (delimiter != '-')
     {
-        std::cout << "Wrong date format: " << date_buffer << '\n';
-        throw std::runtime_error("Wrong date format");
+        std::cout << "Wrong date format: " << read << '\n';
+        throw std::exception();
     }
     date_is >> delimiter >> day;
     if (delimiter != '-' || date_is.fail() || !date_is.eof() || year > 9999 || month > 99 || day > 99)
     {
-        std::cout << "Wrong date format: " << date_buffer << '\n';
-        throw std::runtime_error("Wrong date format");
+        std::cout << "Wrong date format: " << read << '\n';
+        throw std::exception();
     }
     if (month < 1 or month > 12)
     {
         std::cout << "Month value is invalid: " << month << '\n';
-        throw std::runtime_error("Wrong month value");
+        throw std::exception();
     }
     if (day < 1 or day > 31)
     {
         std::cout << "Day value is invalid: " << day << '\n';
-        throw std::runtime_error("Wrong day value");
+        throw std::exception();
     }
-    date = Date(year, month, day);
-    return is;
+    return Date(year, month, day);
 }
 
 
@@ -95,14 +84,14 @@ public:
     bool DeleteEvent(const Date& date, const std::string& event);
     size_t  DeleteDate(const Date& date);
 
-    const std::set<std::string>& Find(const Date& date) const;
+    std::set<std::string> Find(const Date& date) const;
 
     void Print() const;
 private:
     std::map<Date, std::set<std::string>> bace;
 };
 
-void Database::AddEvent(const Date& date, const std::string& event)
+void Database::AddEvent(const Date& date, const std::string& event) 
 {
     bace[date].insert(event);
 }
@@ -123,9 +112,9 @@ size_t Database::DeleteDate(const Date& date)
     return result;
 }
 
-const std::set<std::string>& Database::Find(const Date& date) const
+std::set<std::string> Database::Find(const Date& date) const
 {
-    if (!bace.contains(date)) return empty;
+    if (!bace.contains(date)) return {};
     return bace.at(date);
 }
 
@@ -149,7 +138,7 @@ int main()
     {
         if (commandLine.size() == 0)
             continue;
-        
+
         std::string nameCommand;
         std::stringstream stream(commandLine);
         stream >> nameCommand;
@@ -157,16 +146,17 @@ int main()
         {
             if (nameCommand == "Add")
             {
-                std::string event;
-                Date date;
-                stream >> date >> event;
+                std::string event, read;
+                stream >> read;
+                Date date = readDate(read);
+                stream  >> event;
                 db.AddEvent(date, event);
             }
             else if (nameCommand == "Del")
             {
-                std::string event;
-                Date date;
-                stream >> date;
+                std::string event, read;
+                stream >> read;
+                Date date = readDate(read);
                 if (stream.eof())
                 {
                     std::cout << "Deleted " << db.DeleteDate(date) << " events\n";
@@ -182,14 +172,15 @@ int main()
             }
             else if (nameCommand == "Find")
             {
-                Date date;
-                stream >> date;
+                std::string read;
+                stream >> read;
+                Date date = readDate(read);
                 for (const auto& n : db.Find(date))
                 {
                     std::cout << n << '\n';
                 }
             }
-            else if (nameCommand == "Print") 
+            else if (nameCommand == "Print")
                 db.Print();
             else
             {
@@ -197,7 +188,7 @@ int main()
                 break;
             }
         }
-        catch (const std::runtime_error& )
+        catch (const std::runtime_error&)
         {
             break;
         }
@@ -205,3 +196,4 @@ int main()
 
     return 0;
 }
+
