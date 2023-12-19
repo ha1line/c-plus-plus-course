@@ -14,7 +14,7 @@ public:
 	void AddEvent(const Date& date, const std::string& event);
 	bool DeleteEvent(const Date& date, const std::string& event) noexcept;
 	size_t DeleteDate(const Date& date) noexcept;
-	const Events& Find(const Date& date) const noexcept;
+	Events Find(const Date& date) const noexcept;
 	void Print() const noexcept;
 private:
 	std::map<Date, Events> events_;

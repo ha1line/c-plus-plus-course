@@ -13,7 +13,7 @@ public:
 	void DispatchCallback(const std::string & input);
 	void RegCommand(std::string command, CommandCallback&& callback);
 private:
-	std::map<std::string, CommandCallback, std::less<>> commands;
+	std::map<std::string, CommandCallback> commands;
 };
 
 #endif //COMMANDS_H

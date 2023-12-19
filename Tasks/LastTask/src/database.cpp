@@ -22,12 +22,11 @@ size_t Database::DeleteDate(const Date& date) noexcept {
 	return 0;
 }
 
-const Events& Database::Find(const Date& date) const noexcept {
+Events Database::Find(const Date& date) const noexcept {
 	if(const auto it = events_.find( date ); it != events_.end( )) {
 		return it->second;
 	}
-	static Events empty;
-	return empty;
+	return {};
 }
 
 void Database::Print() const noexcept {

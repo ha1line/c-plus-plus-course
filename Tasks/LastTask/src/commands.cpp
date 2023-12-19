@@ -4,6 +4,7 @@ void Commands::DispatchCallback(const std::string & input) {
 	if( input.empty(  ) ) {
 		return;
 	}
+
 	std::stringstream input_stream(input);
 
 	std::string command;
