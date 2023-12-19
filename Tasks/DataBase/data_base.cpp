@@ -110,8 +110,13 @@ public:
     }
 
     std::set<std::string> Find(const Date &date)
-    { 
-        return m_db[date]; 
+    {
+        if (m_db.contains(date) && m_db[date].size() > 0)
+        {
+            return m_db[date]; 
+        }
+
+        return std::set<std::string>();
     }
 
     void Print() const
