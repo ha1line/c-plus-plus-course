@@ -8,11 +8,9 @@
 #include <string_view>
 #include <exception>
 
-
 class Date
 {
 public:
-  Date() = default; 
   Date(int year, int month, int day) : m_year(year), m_month(month), m_day(day)
   {
     if (month < 1 || month > 12)
@@ -56,11 +54,8 @@ public:
 
   bool DeleteEvent(const Date& date, const std::string& event)
   {
-    if(m_data.contains(date) && m_data[date].contains(event))
-    {
-      m_data[date].erase(event);
+    if(m_data.contains(date) && m_data[date].erase(event) != 0)
       return true;
-    }
     return false;
   }
 
@@ -75,10 +70,10 @@ public:
     return 0;
   }
 
-  std::set<std::string> Find(const Date& date) const
+  std::set<std::string> Find(const Date& date)
   {
     if(m_data.contains(date))
-      return m_data.find(date)->second;
+      return m_data[date];
     else
       return std::set<std::string>();
   }
@@ -94,8 +89,6 @@ private:
   std::map<Date, std::set<std::string>> m_data;
 };
 
-
-
 Date ParseDate(std::istringstream& is)
 {
   std::string date, afterDay;
@@ -106,21 +99,19 @@ Date ParseDate(std::istringstream& is)
   if(!(dateIs >> year >> dash >> month >> dash >> day) || dateIs >> afterDay)
     throw std::invalid_argument("Wrong date format: " + date);
   else
-    try
-    {
-      return Date(year, month, day);
-    }
-    catch(const std::invalid_argument& e)
-    {
-      throw std::invalid_argument(e.what());
-    }
+    return Date(year, month, day); 
+}
+
+bool IsUnknownCommand(const std::string& command)
+{
+  return command != "Add" && command != "Del" && command != "Find" && command != "Print";
 }
 
 int main()
 {
   Database db;
   std::string commandLine, command, event;
-  Date resultDate;
+  Date resultDate = Date(1,1,1);
   
   while (std::getline(std::cin, commandLine))
   {
@@ -129,27 +120,28 @@ int main()
     std::istringstream is(commandLine);
     
     is >> command;
-
-    if(command == "Add")
+    if(IsUnknownCommand(command))
+      std::cout << "Unknown command: " << command << std::endl;
+    else if(command == "Print")
+      db.Print();
+    else
     {
       try
       {
         resultDate = ParseDate(is);
-        is >> event;
-        db.AddEvent(resultDate, event);
       }
       catch(const std::invalid_argument& e)
       {
         std::cout << e.what() << std::endl;
+        continue;
       }
-      
-    }
-
-  else if(command == "Del")
-  {
-    try
+      if(command == "Add")
       {
-        resultDate = ParseDate(is);
+        is >> event;
+        db.AddEvent(resultDate, event);
+      }
+      else if(command == "Del")
+      {
         if(is >> event)
         {
           if(db.DeleteEvent(resultDate, event))
@@ -163,33 +155,13 @@ int main()
           std::cout << "Deleted " << n << " events" << std::endl;
         }
       }
-      catch(const std::invalid_argument& e)
+      else if(command == "Find")
       {
-        std::cout << e.what() << std::endl;
+        std::set<std::string> findingEvents = db.Find(resultDate);
+        for (const std::string& event : findingEvents)
+          std::cout << event << std::endl;
       }
-  }
-
-  else if(command == "Find")
-  {
-    try
-    {
-      resultDate = ParseDate(is);
-      std::set<std::string> findingEvents = db.Find(resultDate);
-      for (const std::string& event : findingEvents)
-        std::cout << event << std::endl;
-    }
-    catch(const std::invalid_argument& e)
-    {
-      std::cout << e.what() << std::endl;
     }
   }
-
-  else if(command == "Print")
-    db.Print();
-
-  else
-    std::cout << "Unknown command: " << command << std::endl;
-  }
-  
   return 0;
 }
