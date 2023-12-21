@@ -13,32 +13,21 @@ public:
    {
        std::istringstream ss(dateStr);
        char delimiter;
-       ss >> _year  >> delimiter >> _month  >> delimiter >> _day;
-       if (ss.fail() || delimiter != '-' || !ss.eof())
-       {
-          throw std::invalid_argument("Wrong date format: " + dateStr);
-       }
-       if (_month < 1 || _month > 12) 
-       {
-        throw std::invalid_argument("Month value is invalid: " +  std::to_string(_month));
-       }
-       if (_day < 1 || _day > 31) 
-       {
-        throw std::invalid_argument("Day value is invalid: " +  std::to_string(_day));
-       }
+       ss >> m_year  >> delimiter >> m_month  >> delimiter >> m_day;
+       validateDate(ss, delimiter, dateStr);
    }
 
   int GetYear() const 
   {
-    return _year;
+    return m_year;
   }
   int GetMonth() const
   {
-    return _month;
+    return m_month;
   }
   int GetDay() const
   {
-    return _day;
+    return m_day;
   }
   friend bool operator<(const Date& lhs, const Date& rhs)
   {
@@ -47,9 +36,25 @@ public:
   }
 
 private:
-  int _year;
-  int _month;
-  int _day;
+   void validateDate(std::istringstream& ss, char delimiter, const std::string& dateStr) const
+   {
+     if (ss.fail() || delimiter != '-' || !ss.eof())
+     {
+       throw std::invalid_argument("Wrong date format: " + dateStr);
+     }
+     if (m_month < 1 || m_month > 12)
+     {
+       throw std::invalid_argument("Month value is invalid: " + std::to_string(m_month));
+     }
+     if (m_day < 1 || m_day > 31)
+     {
+       throw std::invalid_argument("Day value is invalid: " + std::to_string(m_day));
+     }
+   }
+
+  int m_year;
+  int m_month;
+  int m_day;
 };
 
 
@@ -135,6 +140,7 @@ int main()
       {
           std::string dateStr, event;
           ss >> dateStr;
+
           if (ss >> event)
           {
               if (db.DeleteEvent(Date(dateStr), event))
