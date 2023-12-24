@@ -9,14 +9,13 @@
 class Date
 {
 public:
-  Date(const std::string& dateStr)
-   {
-       std::istringstream ss(dateStr);
-       char delimiter;
-       ss >> m_year  >> delimiter >> m_month  >> delimiter >> m_day;
-       validateDate(ss, delimiter, dateStr);
-   }
-
+  Date(const int day, const int month, const int year) :
+   m_day(day), 
+   m_month(month), 
+   m_year(year)
+  {
+    validateDate();
+  }
   int GetYear() const 
   {
     return m_year;
@@ -29,34 +28,50 @@ public:
   {
     return m_day;
   }
-  friend bool operator<(const Date& lhs, const Date& rhs)
+  bool operator<(const Date& other) const
   {
-  return std::make_tuple(lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()) <
-         std::make_tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
+    return std::tie(m_year, m_month, m_day) < 
+           std::tie(other.m_year, other.m_month, other.m_day);
   }
-
 private:
-   void validateDate(std::istringstream& ss, char delimiter, const std::string& dateStr) const
-   {
-     if (ss.fail() || delimiter != '-' || !ss.eof())
-     {
-       throw std::invalid_argument("Wrong date format: " + dateStr);
-     }
-     if (m_month < 1 || m_month > 12)
-     {
-       throw std::invalid_argument("Month value is invalid: " + std::to_string(m_month));
-     }
-     if (m_day < 1 || m_day > 31)
-     {
-       throw std::invalid_argument("Day value is invalid: " + std::to_string(m_day));
-     }
-   }
+   void validateDate() const
+  {
+    if (m_month < 1 || m_month > 12)
+    {
+      throw std::invalid_argument("Month value is invalid: " + std::to_string(m_month));
+    }
+
+    if (m_day < 1 || m_day > 31)
+    {
+      throw std::invalid_argument("Day value is invalid: " + std::to_string(m_day));
+    }
+  }
 
   int m_year;
   int m_month;
   int m_day;
 };
 
+std::ostream& operator<<(std::ostream& os, const Date& date)
+{
+    os << std::setw(4) << std::setfill('0') << date.GetYear() << "-"
+       << std::setw(2) << std::setfill('0') << date.GetMonth() << "-"
+       << std::setw(2) << std::setfill('0') << date.GetDay();
+    return os;
+}
+
+Date parseDate(const std::string& dateStr)
+{
+  std::istringstream ss(dateStr);
+  int day, month, year;
+  char delimiter;
+  ss >> year >> delimiter >> month >> delimiter >> day;
+  if (ss.fail() || delimiter != '-' || !ss.eof())
+  {
+    throw std::invalid_argument("Wrong date format: " + dateStr);
+  }
+  return Date(day, month, year);
+}
 
 class Database
 {
@@ -68,7 +83,7 @@ public:
 
   bool DeleteEvent(const Date& date, const std::string& event)
   {
-    if (storage.count(date) > 0 && storage[date].count(event) > 0) 
+    if (storage.contains(date) && storage[date].contains(event)) 
     {
       storage[date].erase(event);
       return true;
@@ -78,7 +93,7 @@ public:
 
   int DeleteDate(const Date& date)
   {
-    if (storage.count(date) > 0) 
+    if (storage.contains(date)) 
     {
       int n = storage[date].size();
       storage.erase(date);
@@ -89,26 +104,20 @@ public:
 
   std::set<std::string> Find(const Date& date) const
   {
-    if (storage.count(date) > 0) 
+    if (storage.contains(date)) 
     {
       return storage.at(date);
     }
-    else
-    { 
-      return {};
-    }
+    return {};
   }
   
   void Print() const {
-          for (const auto& item : storage) {
-              for (const std::string& event : item.second) {
-                  std::cout << std::setw(4) << std::setfill('0') << item.first.GetYear() <<
-                      "-" << std::setw(2) << std::setfill('0') << item.first.GetMonth() <<
-                      "-" << std::setw(2) << std::setfill('0') << item.first.GetDay() <<
-                      " " << event << std::endl;
-              }
-          }
-      }
+    for (const auto& item : storage) {
+        for (const std::string& event : item.second) {
+            std::cout << item.first << " " << event << std::endl;
+        }
+    }
+}
 private:
   std::map<Date, std::set<std::string>> storage;
 };
@@ -130,12 +139,14 @@ int main()
       {
         continue;
       }
+
       if (command == "Add") 
       {
           std::string dateStr, event;
           ss >> dateStr >> event;
-          db.AddEvent(Date(dateStr), event);
+          db.AddEvent(parseDate(dateStr), event);
       }
+
       else if (command == "Del") 
       {
           std::string dateStr, event;
@@ -143,7 +154,7 @@ int main()
 
           if (ss >> event)
           {
-              if (db.DeleteEvent(Date(dateStr), event))
+              if (db.DeleteEvent(parseDate(dateStr), event))
               {
                  std::cout << "Deleted successfully" << std::endl;
               }
@@ -154,19 +165,21 @@ int main()
           }
           else
           {
-              int deletedCount = db.DeleteDate(Date(dateStr));
+              int deletedCount = db.DeleteDate(parseDate(dateStr));
               std::cout << "Deleted " << deletedCount << " events" << std::endl;
           }
         }
+
       else if (command == "Find") 
       {
         std::string dateStr;
         ss >> dateStr;
-        for (const std::string& event : db.Find(dateStr)) 
+        for (const std::string& event : db.Find(parseDate(dateStr))) 
         {
           std::cout << event << std::endl;
         }
       }
+
       else if (command == "Print") 
       {
           db.Print();
@@ -175,6 +188,7 @@ int main()
           throw std::invalid_argument("Unknown command: " + command);
       }
     }
+    
     catch (const std::invalid_argument& e)
     {
        std::cout << e.what() << "\n";
