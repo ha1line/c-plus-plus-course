@@ -82,13 +82,13 @@ bool operator<(const Date& lhs, const Date& rhs) noexcept
 			std::make_tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
 }
 
-std::ostream& operator<<(std::ostream& ostream, const Date& date)
+std::ostream& operator<<(std::ostream& os, const Date& date)
 {
-	ostream << (date.GetYear() < 0 ? "-" : "") << std::setw(4) << std::setfill('0') <<
+	os << (date.GetYear() < 0 ? "-" : "") << std::setw(4) << std::setfill('0') <<
 			   std::abs(date.GetYear()) << "-" << std::setw(2) << std::setfill('0') <<
 			   date.GetMonth() << "-" << std::setw(2) << std::setfill('0') <<
 			   date.GetDay();
-	return ostream;
+	return os;
 }
 
 class Database
@@ -100,10 +100,13 @@ public:
 	}
 	bool DeleteEvent(const Date& date, const std::string& event) noexcept
 	{
-		if (m_map[date].count(event))
+		if (m_map.count(date))
 		{
-			m_map[date].erase(event);
-			return true;
+			if (m_map[date].count(event))
+			{
+				m_map[date].erase(event);
+				return true;
+			}
 		}
 		return false;
 	}
@@ -118,22 +121,22 @@ public:
 		return 0;
 	}
 
-	std::set<std::string> Find(const Date& date) const noexcept
+	std::set<std::string> Find(Date& date) noexcept
 	{
 		if (m_map.count(date))
 		{
-			return m_map.at(date);
+			return m_map[date];
 		}
 		return std::set<std::string>();
 	}
 
 	void Print() const noexcept
 	{
-		for (const auto& e : m_map)
+		for (const auto& events : m_map)
 		{
-			for (const auto& event : e.second)
+			for (const auto& event : events.second)
 			{
-				std::cout << e.first << " " << event << std::endl;
+				std::cout << events.first << " " << event << std::endl;
 			}
 		}
 	}
@@ -141,7 +144,7 @@ private:
 	std::map<Date, std::set<std::string>> m_map;
 };
 
-void execut_command(const std::string& commandLine, Database& db)
+void execute_command(const std::string& commandLine, Database& db)
 {
 	std::istringstream is (commandLine);
 	std::string command;
@@ -186,12 +189,12 @@ void execut_command(const std::string& commandLine, Database& db)
 		std::string date_str;
 		is >> date_str;
 		Date date = parse_date(date_str);
-		for (const auto& row : db.Find(date))
+		for (const auto& event : db.Find(date))
 		{
-			std::cout << row << std::endl;
+			std::cout << event << std::endl;
 		}
 	}
-	else if (command =="Print")
+	else if (command == "Print")
 	{
 		db.Print();
 	} else
@@ -204,18 +207,16 @@ int main()
 {
 	Database db;
 	std::string commandLine;
-
-	while (std::getline(std::cin, commandLine))
+	try
 	{
-		try
+		while (std::getline(std::cin, commandLine))
 		{
-			execut_command(commandLine, db);
+			execute_command(commandLine, db);
 		}
-		catch (std::exception& e)
-		{
-			std::cout << e.what() << std::endl;
-			return 0;
-		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cout << e.what() << std::endl;
 	}
 	return 0;
 }
