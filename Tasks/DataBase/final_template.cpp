@@ -25,9 +25,9 @@ public:
     int GetDay() const { return day; }
 
 private:
-    int year = -1;
-    int month = -1;
-    int day = -1;
+    int year;
+    int month;
+    int day;
 };
 
 bool operator<(const Date& lhs, const Date& rhs) {
@@ -98,7 +98,7 @@ private:
     std::map<Date, std::set<std::string>> events;
 };
 
-std::istringstream& operator>>(std::istringstream& is, Date& date) {
+Date parseDate(std::istringstream& is) {
     std::string date_str;
     is >> date_str;
     std::istringstream dateStream(date_str);
@@ -109,8 +109,7 @@ std::istringstream& operator>>(std::istringstream& is, Date& date) {
     if (dateStream.fail() || dateStream.peek() != EOF) {
         throw std::invalid_argument("Wrong date format: " + date_str);
     }
-    date = Date(year, month, day);
-    return is;
+    return Date(year, month, day);
 }
 
 int main() {
@@ -122,16 +121,14 @@ int main() {
         is >> command;
         try {
             if (command == "Add") {
-                Date date(1, 1, 1);
-                is >> date;
+                Date date = parseDate(is);
                 std::string text;
                 is >> text;
                 db.AddEvent(date, text);
             } else if (command == "Print") {
                 db.Print();
             } else if (command == "Del") {
-                Date date(1, 1, 1);
-                is >> date;
+                Date date = parseDate(is);
                 std::string event;
                 is >> event;
                 if (!event.empty()) {
@@ -145,8 +142,7 @@ int main() {
                     std::cout << "Deleted " << deletedEvents << " events" << std::endl;
                 }
             } else if (command == "Find") {
-                Date date(1, 1, 1);
-                is >> date;
+                Date date = parseDate(is);
                 db.PrintEventsOnDate(date);
             } else if (command == "Exit") {
                 break;
